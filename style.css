@@ -5,8 +5,8 @@ h1{
 #canvas_wrap{
 	position: relative;
 	background-color: grey;
-	width: 779px;
-	height: 779px;
+	width: 1414px;
+	height: 1014px;
 	margin: 0 auto;
 }
 
@@ -14,4 +14,5 @@ h1{
 	position: absolute;
 	background-color: white;
 	margin: 7px 7px;
+	z-index: 0
 }

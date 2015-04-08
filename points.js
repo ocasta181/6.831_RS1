@@ -1,0 +1,3 @@
+var Points = function(){
+	
+};
