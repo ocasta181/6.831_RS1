@@ -21,6 +21,7 @@ var farDistract;
 var leftDistract;
 var rightDistract;
 var distance;
+var density;
 
 var points = [];
 
@@ -29,11 +30,11 @@ var initializeExperiment = function(){
 	c = document.getElementById("experiment");
 	ctx=c.getContext("2d");
 
-	width = 32;
+	width = 16;
 	radius = width/2;
-	mod = width*EWRatio.large+width;
+	mod = width*EWRatio.large+radius;
 	mainTarget = {"x":c.width/2, "y":c.height/2};
-	addTarget(mainTarget, radius, "green");
+	addTarget(mainTarget, radius, "red");
 	b = document.getElementById("bubble");
 	b_ctx=b.getContext("2d");
 };
@@ -45,7 +46,7 @@ var randomize = function(){
 	offset = mod+width;
 	mainTarget = { "x": Math.round(getRandomDim(c.width-offset*2, offset)), 
 					"y": Math.round(getRandomDim(c.height-offset*2, offset)) };
-	addTarget(mainTarget, radius, "green");
+	addTarget(mainTarget, radius, "red");
 	calculateVector();
 	randomDistractors();
 	addIntermediates();
@@ -55,6 +56,7 @@ var randomize = function(){
 
 var getRandomDim = function(to, from){
 	from = typeof from !== "undefined" ? from : 0;
+
 	value = Math.floor(Math.random() * to) + from;
 
 	return value;
@@ -126,50 +128,105 @@ var calculateVector = function(){
 	slope = getSlope(mousePoint, mainTarget);
 };
 
+var is_in_triangle = function(test, a, b, c){
 
+	//credit: http://www.blackpawn.com/texts/pointinpoly/default.html
+
+	var v0 = [c.x-a.x,c.y-a.y];
+	var v1 = [b.x-a.x,b.y-a.y];
+	var v2 = [test.x-a.x,test.y-a.y];
+
+	var dot00 = (v0[0]*v0[0]) + (v0[1]*v0[1]);
+	var dot01 = (v0[0]*v1[0]) + (v0[1]*v1[1]);
+	var dot02 = (v0[0]*v2[0]) + (v0[1]*v2[1]);
+	var dot11 = (v1[0]*v1[0]) + (v1[1]*v1[1]);
+	var dot12 = (v1[0]*v2[0]) + (v1[1]*v2[1]);
+
+	var invDenom = 1/ (dot00 * dot11 - dot01 * dot01);
+
+	var u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	var v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+	return ((u >= 0) && (v >= 0) && (u + v < 1));
+};
+
+var is_in_circle = function(test, center, radius){
+	return (getDistance(test, center)<radius);
+};
 
 
 var addIntermediates = function(){
-
 	var angle_bisect_len = distance-mod-radius;
 	var num_intermediates = Math.floor(angle_bisect_len/width)*distractDensity;
+	console.log(num_intermediates);
+	console.log(angle_bisect_len*(num_intermediates-1))
 	var len_between_inter = angle_bisect_len/(num_intermediates);
-	var adjacentRad = Math.atan(10);
-	var TOA = Math.tan(20);
+	var b_point;
+	var c_point;
+	density = -num_intermediates/Math.pow(angle_bisect_len,2)*Math.tan(160);
+	console.log(density);
 	for(var i = 1; i<=num_intermediates-1; i++){
 		var pointDistance = len_between_inter*i;
-		var adjacent_len = TOA*pointDistance;
-		var adjacent_len = getRandomDim(adjacent_len);
-		var mu = Math.atan(adjacent_len/pointDistance);
-		var new_len = adjacent_len/Math.sin(mu);
-
-
+		var adjacent_len = Math.tan(160)*pointDistance;
+		var adjacent_len = getRandomDim(-2*adjacent_len)+adjacent_len;
+		
 		if(mainTarget.x > mouseX){
-			//var new_x = new_len*Math.cos(slopeRad+mu)+mouseX
-			//var new_y = new_len*Math.sin(slopeRad+mu)+mouseY
 			var new_x = Math.round(pointDistance*Math.cos(slopeRad)+mouseX);
 			var new_y = Math.round(pointDistance*Math.sin(slopeRad)+mouseY);
-			//var adjusted_x = new_len*Math.cos(Math.PI/2+slopeRad)+new_x;
-			//var adjusted_y = new_len*Math.sin(Math.PI/2+slopeRad)+new_y;
+			
+			var new_x = Math.round(adjacent_len*Math.cos(Math.PI/2+slopeRad)+new_x);
+			var new_y = Math.round(adjacent_len*Math.sin(Math.PI/2+slopeRad)+new_y);
+
+
 		} else {
-			//var new_x = new_len*Math.cos(Math.PI+slopeRad+mu)+mouseX
-			//var new_y = new_len*Math.sin(Math.PI+slopeRad+mu)+mouseY
 			var new_x = Math.round(pointDistance*Math.cos(Math.PI+slopeRad)+mouseX);
 			var new_y = Math.round(pointDistance*Math.sin(Math.PI+slopeRad)+mouseY);
-			//var adjusted_x = adjacent_len*Math.cos(3*Math.PI/2+slopeRad)+new_x;
-			//var adjusted_y = adjacent_len*Math.sin(3*Math.PI/2+slopeRad)+new_y;
+			
+			var new_x = Math.round(adjacent_len*Math.cos(3*Math.PI/2+slopeRad)+new_x);
+			var new_y = Math.round(adjacent_len*Math.sin(3*Math.PI/2+slopeRad)+new_y);
 		};
 		var point = {"x": new_x,"y": new_y};
-		console.log(points);
-		
-		//console.log(adjacent_len);
-		//console.log(Math.atan(adjacent_len/pointDistance));
-
-
-		//adjusted_point = {"x": adjusted_x,"y": adjusted_y};
-
 		addTarget(point,radius);
 	};
+
+
+	var adjacent_len = Math.tan(160)*angle_bisect_len;
+	if(mainTarget.x > mouseX){
+		var b_x = Math.round(adjacent_len*Math.cos(Math.PI/2+slopeRad)+farDistract.x);
+		var b_y = Math.round(adjacent_len*Math.sin(Math.PI/2+slopeRad)+farDistract.y);
+		var c_x = Math.round(-adjacent_len*Math.cos(Math.PI/2+slopeRad)+farDistract.x);
+		var c_y = Math.round(-adjacent_len*Math.sin(Math.PI/2+slopeRad)+farDistract.y);
+
+	} else {
+		var b_x = Math.round(adjacent_len*Math.cos(3*Math.PI/2+slopeRad)+nearDistract.x);
+		var b_y = Math.round(adjacent_len*Math.sin(3*Math.PI/2+slopeRad)+nearDistract.y);
+		var c_x = Math.round(-adjacent_len*Math.cos(3*Math.PI/2+slopeRad)+nearDistract.x);
+		var c_y = Math.round(-adjacent_len*Math.sin(3*Math.PI/2+slopeRad)+nearDistract.y);
+
+	};
+	b_point = {"x": b_x,"y": b_y};
+	c_point = {"x": c_x,"y": c_y};
+
+
+	for(var i = 1; i<=Math.floor(c.width/width); i++){
+		
+		
+		for (var j = 1; j<=Math.floor(c.height/width); j++){
+			
+			if(getRandomDim(100)/100<=density){
+				var point = {"x": i*width-radius, "y": j*width-radius};
+				if((!is_in_circle(point, mainTarget, mod+radius)) &&
+						(!is_in_triangle(point, mousePoint, b_point, c_point))) {
+					addTarget(point, radius);
+				};
+				
+			};
+			
+		};
+		
+	};
+		
+
 
 };
 
@@ -203,45 +260,44 @@ $(document).ready(function() {
         mouseY = e.pageY - parentOffset.top;
         mousePoint = {"x": mouseX, "y": mouseY};
 
+        if(bubble_flag){
+        	setInterval(function(){
+	        	var closest_point;
+	        	var next_point;
+	        	var closest_distance;
+	        	var next_distance;
+	        	for(var i = 0; i<points.length; i++){
+	        		var this_distance = getDistance(mousePoint, points[i]);
+	        		if (typeof closest_point == "undefined"){
+	        			closest_point = points[i];
+	        			closest_distance = this_distance;
+	        		} else if (this_distance <= closest_distance) {
+	        			next_point = closest_point;
+	        			next_distance = closest_distance;
+	        			closest_point = points[i];
+	        			closest_distance = this_distance;
+	        		} else if (typeof next_point == "undefined"){
+	        			next_point = points[i];
+	        			next_distance = this_distance;
+	        		} else if (this_distance <= next_distance){
+	        				next_point = points[i];
+	        				next_distance = this_distance; 
+	        		};
+	        	};
+	        	
+	        	var bubble_size = next_distance-radius;
+	        	equal_spaced = next_distance == closest_distance;
+	        	bubble_color = "rgba(204, 255, 255, 0.8)"
 
-        setInterval(function(){
-        	var closest_point;
-        	var next_point;
-        	var closest_distance;
-        	var next_distance;
-        	for(var i = 0; i<points.length; i++){
-        		var this_distance = getDistance(mousePoint, points[i]);
-        		if (typeof closest_point == "undefined"){
-        			closest_point = points[i];
-        			closest_distance = this_distance;
-        		} else if (this_distance <= closest_distance) {
-        			next_point = closest_point;
-        			next_distance = closest_distance;
-        			closest_point = points[i];
-        			closest_distance = this_distance;
-        		} else if (typeof next_point == "undefined"){
-        			next_point = points[i];
-        			next_distance = this_distance;
-        		} else if (this_distance <= next_distance){
-        				next_point = points[i];
-        				next_distance = this_distance; 
-        		};
-        	};
-        	
-        	var bubble_size = next_distance-radius;
-        	equal_spaced = next_distance == closest_distance;
-        	bubble_color = "rgba(204, 255, 255, 0.8)"
-
-        	if(equal_spaced){
-        		b_ctx.clearRect(0,0,b.width,b.height);
-        	} else {
-        		_closest_point = closest_point;
-        		drawBubble(mousePoint, bubble_size, closest_point, radius*1.33, bubble_color);
-        	};
-        	
-
-
-        }, 100);
+	        	if(equal_spaced){
+	        		b_ctx.clearRect(0,0,b.width,b.height);
+	        	} else {
+	        		_closest_point = closest_point;
+	        		drawBubble(mousePoint, bubble_size, closest_point, radius*1.33, bubble_color);
+	        	};
+        	}, 100);	
+        }
+        
 
 	});
 
@@ -249,14 +305,18 @@ $(document).ready(function() {
 	$("#bubble").click(function(e){
 		var distance = getDistance(mousePoint, mainTarget);
 		
-		if (!equal_spaced && _closest_point == points[0]){
-
-			console.log("success!");
-			randomize();	
-			timer = 0;
+		if(bubble_flag){
+			if (!equal_spaced && _closest_point == points[0]){
+				console.log("success!");
+				randomize();	
+				timer = 0;
+			} else {
+				console.log("fail!");
+			};
 		} else {
-			console.log("fail!");
-		}
+			if 
+		};
+
 
 	});
 
