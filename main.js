@@ -29,14 +29,13 @@ var initializeExperiment = function(){
 	c = document.getElementById("experiment");
 	ctx=c.getContext("2d");
 
-	width = 16;
+	width = 32;
 	radius = width/2;
-	mod = width*EWRatio.small+width;
+	mod = width*EWRatio.large+width;
 	mainTarget = {"x":c.width/2, "y":c.height/2};
 	addTarget(mainTarget, radius, "green");
-	//initialDistractors();
-	//addDistractors(nearDistract, farDistract, leftDistract, rightDistract);
-
+	b = document.getElementById("bubble");
+	b_ctx=b.getContext("2d");
 };
 
 
@@ -50,7 +49,6 @@ var randomize = function(){
 	calculateVector();
 	randomDistractors();
 	addIntermediates();
-
 
 };
 
@@ -88,13 +86,10 @@ var randomDistractors = function(){
 					"y": Math.round(mod*Math.sin(slopeRad)+ mainTarget.y)};
 	farDistract = {"x": Math.round(mod*Math.cos(Math.PI+slopeRad)+ mainTarget.x), 
 					"y": Math.round(mod*Math.sin(Math.PI+slopeRad)+ mainTarget.y)};
-	
 	leftDistract = {"x": Math.round(mod*Math.cos(Math.PI/2+slopeRad)+ mainTarget.x),
 					"y": Math.round(mod*Math.sin(Math.PI/2+slopeRad)+ mainTarget.y)};	
-
 	rightDistract = {"x": Math.round(mod*Math.cos((3*Math.PI)/2+slopeRad)+ mainTarget.x), 
 					"y": Math.round(mod*Math.sin((3*Math.PI)/2+slopeRad)+ mainTarget.y)};
-
 
 	addDistractors(nearDistract, farDistract, leftDistract, rightDistract);
 
@@ -110,51 +105,35 @@ var addDistractors = function(near, far, left, right){
 
 };
 
-var distance = function(point1, point2){
+var getDistance = function(point1, point2){
+	var rise = point1.y - point2.y;
+	var run = point1.x - point2.x;
+	var distance = Math.sqrt(Math.pow(rise,2)+Math.pow(run,2));
+	return distance;
+}
+
+var getSlope = function(point1, point2){
 	var rise = point1.y - point2.y;
 	var run = point1.x - point2.x;
 	var slope = rise/run;
-	var distance = Math.sqrt(Math.pow(rise,2)+Math.pow(run,2));
-	return [distance, slope];
+	return slope;
 }
 
 
+
 var calculateVector = function(){
-	var newvalue = distance(mousePoint, mainTarget);
-	distance = newvalue[0];
-	slope = newvalue[1];
-
-	//draw line
-	/*
-	ctx.beginPath();
-	ctx.moveTo(mouseX,mouseY);
-	ctx.lineTo(mainTarget.x, mainTarget.y);
-	ctx.stroke();
-
-	// draw circle
-	ctx.beginPath()
-	ctx.arc(mainTarget.x, mainTarget.y, mod, 0, 2*Math.PI);
-	ctx.stroke();
-	*/
-
+	distance = getDistance(mousePoint, mainTarget);
+	slope = getSlope(mousePoint, mainTarget);
 };
 
 
 
 
 var addIntermediates = function(){
-	/*
-	console.log("width: ",c.width);
-	console.log("height: ",c.height);
-	console.log("distract: ", distractDensity);
-	*/
-	//console.log("distance: ",distance);
+
 	var angle_bisect_len = distance-mod-radius;
 	var num_intermediates = Math.floor(angle_bisect_len/width)*distractDensity;
 	var len_between_inter = angle_bisect_len/(num_intermediates);
-	//console.log("slope: ",slope);
-	//console.log("slopeRad: ",slopeRad);
-	
 	var adjacentRad = Math.atan(10);
 	var TOA = Math.tan(20);
 	for(var i = 1; i<=num_intermediates-1; i++){
@@ -192,27 +171,21 @@ var addIntermediates = function(){
 		addTarget(point,radius);
 	};
 
-
-
-
-	//var slice_x = Math.floor(c.width/distractDensity);
-	//var slice_y = Math.floor(c.height/distractDensity);
-	//console.log("slice_x: ", slice_x);
-	//console.log("slice_y: ", slice_y);
-	/**
-	for (var i = 0; i < slice_x; i++){
-		for(var j = 0; j < slice_y; j++){
-			var randomPoint = {"x": getRandomDim(i*c.width-offset*2, offset), 
-								"y":getRandomDim(j*c.height-offset*2, offset)};
-			console.log("randomPoint: ",randomPoint);
-			addTarget(randomPoint, radius);
-
-		};
-	};
-	*/
-
-
 };
+
+
+var drawBubble = function(point1, radius1, point2, radius2, color){
+	b_ctx.clearRect(0,0,b.width,b.height);
+	b_ctx.beginPath();
+	b_ctx.arc(point1.x, point1.y, radius1, 0, 2 * Math.PI);
+	b_ctx.arc(point2.x, point2.y, radius2, 0, 2 * Math.PI);
+	b_ctx.fillStyle = color;
+	b_ctx.fill();
+	b_ctx.closePath();
+
+	
+
+}
 
 
 $(document).ready(function() {
@@ -221,9 +194,10 @@ $(document).ready(function() {
 
 	initializeExperiment();
 	var parentOffset = $("#experiment").offset();
+	var equal_spaced;
+	var _closest_point;
 
-
-	$("#experiment").mousemove(function(e){
+	$("#bubble").mousemove(function(e){
     	e.preventDefault();
         mouseX = e.pageX - parentOffset.left;
         mouseY = e.pageY - parentOffset.top;
@@ -233,41 +207,57 @@ $(document).ready(function() {
         setInterval(function(){
         	var closest_point;
         	var next_point;
+        	var closest_distance;
+        	var next_distance;
         	for(var i = 0; i<points.length; i++){
-        		var bubble_distance;
-        		if (points[i]){
-        			var oops;
+        		var this_distance = getDistance(mousePoint, points[i]);
+        		if (typeof closest_point == "undefined"){
+        			closest_point = points[i];
+        			closest_distance = this_distance;
+        		} else if (this_distance <= closest_distance) {
+        			next_point = closest_point;
+        			next_distance = closest_distance;
+        			closest_point = points[i];
+        			closest_distance = this_distance;
+        		} else if (typeof next_point == "undefined"){
+        			next_point = points[i];
+        			next_distance = this_distance;
+        		} else if (this_distance <= next_distance){
+        				next_point = points[i];
+        				next_distance = this_distance; 
         		};
-        	}
+        	};
+        	
+        	var bubble_size = next_distance-radius;
+        	equal_spaced = next_distance == closest_distance;
+        	bubble_color = "rgba(204, 255, 255, 0.8)"
 
-        }, 100) // set to 30-50 for production
+        	if(equal_spaced){
+        		b_ctx.clearRect(0,0,b.width,b.height);
+        	} else {
+        		_closest_point = closest_point;
+        		drawBubble(mousePoint, bubble_size, closest_point, radius*1.33, bubble_color);
+        	};
+        	
+
+
+        }, 100);
 
 	});
 
 
-	$("#experiment").click(function(e){
-		var rise = mainTarget.y - mouseY;
-		var run = mainTarget.x - mouseX;
-		var distance = Math.sqrt(rise*rise+run*run);
-		/**
-		console.log(mouseX+","+mouseY);
-		console.log("mainTarget: ", mainTarget)
-		console.log("mouseX: ", mouseX);
-		console.log("mouseY: ", mouseY);
-		console.log("rise: ",rise);
-		console.log("run: ",run);
-		console.log("distance: ",distance);
-		*/
+	$("#bubble").click(function(e){
+		var distance = getDistance(mousePoint, mainTarget);
+		
+		if (!equal_spaced && _closest_point == points[0]){
 
-
-		if(distance <= radius){
 			console.log("success!");
 			randomize();	
 			timer = 0;
 		} else {
 			console.log("fail!");
 		}
-		//
+
 	});
 
 
