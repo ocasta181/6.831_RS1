@@ -23,6 +23,7 @@ var rightDistract;
 var distance;
 var density;
 
+var bubble_flag = true;
 var points = [];
 
 
@@ -34,7 +35,7 @@ var initializeExperiment = function(){
 	radius = width/2;
 	mod = width*EWRatio.large+radius;
 	mainTarget = {"x":c.width/2, "y":c.height/2};
-	addTarget(mainTarget, radius, "red");
+	addTarget(mainTarget, radius, "green");
 	b = document.getElementById("bubble");
 	b_ctx=b.getContext("2d");
 };
@@ -46,7 +47,7 @@ var randomize = function(){
 	offset = mod+width;
 	mainTarget = { "x": Math.round(getRandomDim(c.width-offset*2, offset)), 
 					"y": Math.round(getRandomDim(c.height-offset*2, offset)) };
-	addTarget(mainTarget, radius, "red");
+	addTarget(mainTarget, radius, "green");
 	calculateVector();
 	randomDistractors();
 	addIntermediates();
@@ -67,8 +68,15 @@ var addTarget = function(point, radius, color){
 	color = typeof color !== "undefined" ? color : "grey";
 	ctx.beginPath();
 	ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
-	ctx.fillStyle = color;
-	ctx.fill();
+	if(color == "green"){
+		ctx.fillStyle = color;
+		ctx.fill();		
+	} else {
+		ctx.lineWidth = radius/4;
+		ctx.strokeStyle = color;
+		ctx.stroke();
+	}
+
 	ctx.closePath();
 	points.push(point);
 
@@ -154,17 +162,23 @@ var is_in_circle = function(test, center, radius){
 	return (getDistance(test, center)<radius);
 };
 
+var is_overlaping = function(center1, center2, radius){
+	return (getDistance(center1, center2)<2*radius);
+}
+
 
 var addIntermediates = function(){
 	var angle_bisect_len = distance-mod-radius;
 	var num_intermediates = Math.floor(angle_bisect_len/width)*distractDensity;
-	console.log(num_intermediates);
-	console.log(angle_bisect_len*(num_intermediates-1))
+	var triangleMass = num_intermediates;
+	var triangleVolume = -Math.pow(angle_bisect_len,2)*Math.tan(160);
 	var len_between_inter = angle_bisect_len/(num_intermediates);
 	var b_point;
 	var c_point;
-	density = -num_intermediates/Math.pow(angle_bisect_len,2)*Math.tan(160);
-	console.log(density);
+	density = triangleMass/triangleVolume;
+	console.log("Triangle Mass: ", triangleMass);
+	console.log("Triangle Volume: ", triangleVolume);
+	console.log("Triangle Density: ",density);
 	for(var i = 1; i<=num_intermediates-1; i++){
 		var pointDistance = len_between_inter*i;
 		var adjacent_len = Math.tan(160)*pointDistance;
@@ -207,26 +221,30 @@ var addIntermediates = function(){
 	b_point = {"x": b_x,"y": b_y};
 	c_point = {"x": c_x,"y": c_y};
 
+	var mass = density*c.width*c.height
+	console.log("volume: ",c.width*c.height);
+	console.log("mass: ",mass);
 
-	for(var i = 1; i<=Math.floor(c.width/width); i++){
-		
-		
-		for (var j = 1; j<=Math.floor(c.height/width); j++){
-			
-			if(getRandomDim(100)/100<=density){
-				var point = {"x": i*width-radius, "y": j*width-radius};
-				if((!is_in_circle(point, mainTarget, mod+radius)) &&
-						(!is_in_triangle(point, mousePoint, b_point, c_point))) {
-					addTarget(point, radius);
+	
+
+	for (var i = 0; i<= mass; i++){
+		var overlap = false;
+		var random_x = getRandomDim(c.width);
+		var random_y = getRandomDim(c.height);
+		var random_point = {"x": random_x, "y": random_y};
+		if((!is_in_circle(random_point, mainTarget, mod+radius)) 
+						&& (!is_in_triangle(random_point, mousePoint, b_point, c_point))) {
+			for (var i = 0; i<points.length; i++){
+				if(is_overlaping(points[i], random_point, radius)){
+					overlap = true;
 				};
-				
+			};
+			if (!overlap){
+				addTarget(random_point, radius);	
 			};
 			
 		};
-		
-	};
-		
-
+	};	
 
 };
 
@@ -314,7 +332,13 @@ $(document).ready(function() {
 				console.log("fail!");
 			};
 		} else {
-			if 
+			if(distance <= radius){
+				console.log("success!");
+				randomize();	
+				timer = 0;
+			} else {
+				console.log("fail!");
+			}
 		};
 
 
