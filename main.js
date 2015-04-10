@@ -2,12 +2,15 @@
 
 
 
+// Server defined globals 
+var EWRatio = 3; 			// { "small": 1.33, "medium": 2, "large": 3 };
+var cursorType = "Bubble"; 	//{ "Point":"Point", "Bubble":"Bubble" }
+var amplitude = 512; 		// 256, 512, 768;
+var distractDensity = 1;	// between 0 and 1
+var width = 16; 			// 8, 16, 32
 
-var EWRatio = { "small": 1.33, "medium": 2, "large": 3 };
-var cursorType = { "Point":"Point", "Bubble":"Bubble" };
-var amplitude;
-var distractDensity = 1;
-var width;
+
+// client defined globals
 var radius;
 var mainTarget;
 var mouseX;
@@ -20,20 +23,16 @@ var nearDistract;
 var farDistract;
 var leftDistract;
 var rightDistract;
-var distance;
 var density;
-
-var bubble_flag = true;
 var points = [];
 
 
 var initializeExperiment = function(){
 	c = document.getElementById("experiment");
 	ctx=c.getContext("2d");
-
-	width = 16;
 	radius = width/2;
-	mod = width*EWRatio.large+radius;
+	mod = width*EWRatio+radius;
+	offset = mod+width;
 	mainTarget = {"x":c.width/2, "y":c.height/2};
 	addTarget(mainTarget, radius, "green");
 	b = document.getElementById("bubble");
@@ -44,14 +43,24 @@ var initializeExperiment = function(){
 var randomize = function(){
 	points = [];
 	ctx.clearRect(0,0,c.width,c.height);
-	offset = mod+width;
-	mainTarget = { "x": Math.round(getRandomDim(c.width-offset*2, offset)), 
-					"y": Math.round(getRandomDim(c.height-offset*2, offset)) };
+	mainTarget = getNextPosition(mainTarget);
 	addTarget(mainTarget, radius, "green");
 	calculateVector();
 	randomDistractors();
 	addIntermediates();
 
+};
+
+var getNextPosition = function(last, deg){
+	var deltaRad = typeof deg !== "undefined" ? deg : getRandomDim(Math.PI*2);
+	var target = { "x": Math.round(amplitude*Math.cos(deltaRad)+ last.x), 
+					"y": Math.round(amplitude*Math.sin(deltaRad)+ last.y) };
+	if(target.x > radius && target.x < c.width-radius && target.y > radius && target.y < c.height-radius){
+		return target;
+	} else {
+		return getNextPosition(last, deltaRad+Math.PI/180);
+	};
+	
 };
 
 
@@ -92,6 +101,7 @@ var initialDistractors = function(){
 var randomDistractors = function(){
 
 	slopeRad = Math.atan(slope);
+
 	nearDistract = {"x": Math.round(mod*Math.cos(slopeRad)+ mainTarget.x), 
 					"y": Math.round(mod*Math.sin(slopeRad)+ mainTarget.y)};
 	farDistract = {"x": Math.round(mod*Math.cos(Math.PI+slopeRad)+ mainTarget.x), 
@@ -132,7 +142,7 @@ var getSlope = function(point1, point2){
 
 
 var calculateVector = function(){
-	distance = getDistance(mousePoint, mainTarget);
+	amplitude = getDistance(mousePoint, mainTarget);
 	slope = getSlope(mousePoint, mainTarget);
 };
 
@@ -168,7 +178,7 @@ var is_overlaping = function(center1, center2, radius){
 
 
 var addIntermediates = function(){
-	var angle_bisect_len = distance-mod-radius;
+	var angle_bisect_len = amplitude-mod-radius;
 	var num_intermediates = Math.floor(angle_bisect_len/width)*distractDensity;
 	var triangleMass = num_intermediates;
 	var triangleVolume = -Math.pow(angle_bisect_len,2)*Math.tan(160);
@@ -176,9 +186,9 @@ var addIntermediates = function(){
 	var b_point;
 	var c_point;
 	density = triangleMass/triangleVolume;
-	console.log("Triangle Mass: ", triangleMass);
-	console.log("Triangle Volume: ", triangleVolume);
-	console.log("Triangle Density: ",density);
+	//console.log("Triangle Mass: ", triangleMass);
+	//console.log("Triangle Volume: ", triangleVolume);
+	//console.log("Triangle Density: ",density);
 	for(var i = 1; i<=num_intermediates-1; i++){
 		var pointDistance = len_between_inter*i;
 		var adjacent_len = Math.tan(160)*pointDistance;
@@ -222,8 +232,8 @@ var addIntermediates = function(){
 	c_point = {"x": c_x,"y": c_y};
 
 	var mass = density*c.width*c.height
-	console.log("volume: ",c.width*c.height);
-	console.log("mass: ",mass);
+	//console.log("volume: ",c.width*c.height);
+	//console.log("mass: ",mass);
 
 	
 
@@ -234,8 +244,9 @@ var addIntermediates = function(){
 		var random_point = {"x": random_x, "y": random_y};
 		if((!is_in_circle(random_point, mainTarget, mod+radius)) 
 						&& (!is_in_triangle(random_point, mousePoint, b_point, c_point))) {
-			for (var i = 0; i<points.length; i++){
-				if(is_overlaping(points[i], random_point, radius)){
+			for (var j = 0; j<points.length; j++){
+				//console.log("j is: ",j)
+				if(is_overlaping(points[j], random_point, radius)){
 					overlap = true;
 				};
 			};
@@ -258,9 +269,12 @@ var drawBubble = function(point1, radius1, point2, radius2, color){
 	b_ctx.fill();
 	b_ctx.closePath();
 
-	
+};
 
-}
+var sendData = function(){
+
+};
+
 
 
 $(document).ready(function() {
@@ -278,7 +292,7 @@ $(document).ready(function() {
         mouseY = e.pageY - parentOffset.top;
         mousePoint = {"x": mouseX, "y": mouseY};
 
-        if(bubble_flag){
+        if(cursorType == "Bubble"){
         	setInterval(function(){
 	        	var closest_point;
 	        	var next_point;
@@ -305,7 +319,7 @@ $(document).ready(function() {
 	        	
 	        	var bubble_size = next_distance-radius;
 	        	equal_spaced = next_distance == closest_distance;
-	        	bubble_color = "rgba(204, 255, 255, 0.8)"
+	        	var bubble_color = "rgba(204, 255, 255, 0.8)"
 
 	        	if(equal_spaced){
 	        		b_ctx.clearRect(0,0,b.width,b.height);
@@ -323,7 +337,7 @@ $(document).ready(function() {
 	$("#bubble").click(function(e){
 		var distance = getDistance(mousePoint, mainTarget);
 		
-		if(bubble_flag){
+		if(cursorType == "Bubble"){
 			if (!equal_spaced && _closest_point == points[0]){
 				console.log("success!");
 				randomize();	
