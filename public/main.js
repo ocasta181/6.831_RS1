@@ -53,6 +53,8 @@ var intro_text = [];
 
 var test_order_base = [];
 var test_order; 
+var latin_square_base = [];
+var current_latin_square = [];
 
 var initializeTestOrderBase = function(){
 	for(var i = 0; i <=26; i++){
@@ -60,8 +62,15 @@ var initializeTestOrderBase = function(){
 	}
 }
 
-var latin_square = function(){
- //for 
+var generate_latin_square = function(){
+ for (var i = 0; i < 3; i++){
+ 	for(var j = 0; j < 3; j++){
+ 		for (var k = 0; k < 3; k++){
+ 			latin_square_base.push({EWRatio: EWRatio_options[i], amplitude: amplitude_options[j], width: width_options[k]});
+ 		};
+ 	};
+
+ };
 };
 
 
@@ -117,7 +126,7 @@ var runIntro = function(){
 	var testing_circle = function(){
 		cursorType = "Point";
 		width = 32;
-		EWRatio = 1.33;
+		EWRatio = 3;
 		amplitude = 256;
 		distractDensity = .75;
 		effectiveWidth = width*EWRatio;
@@ -141,10 +150,14 @@ var randomize = function(){
 	calculateVector();
 	enclosingDistractors();
 	addIntermediates();
+	if(cursorType == "Bubble"){
+
+	}
 
 };
 
 var getNextPosition = function(last, deg){
+	console.log("in next position");
 	var deltaRad = typeof deg !== "undefined" ? deg : getRandomDim(Math.PI*2);
 	var target = { "x": Math.round(amplitude*Math.cos(deltaRad)+ last.x), 
 					"y": Math.round(amplitude*Math.sin(deltaRad)+ last.y) };
@@ -351,12 +364,9 @@ var drawBubble = function(point1, radius1, point2, radius2, color){
 
 var sendData = function(){
 	var data = userID+", "+movementTime+", "+cursorType+", "+ amplitude+", "+width+", "+effectiveWidth;
-	fs.appendFile("C:\\Users\\afoster\\Documents\\GitHub\\6.831_RS1\\testData.txt", data, function(err){
-		if(err){
-			return console.log(err);
-		};
-	});
-
+	console.log(data);
+	//"C:\\Users\\afoster\\Documents\\GitHub\\6.831_RS1\\testData.txt"
+	/**
 	var uri = 'data:text/csv;charset=utf-8,' + escape(CSV); 
 	var link = document.createElement('a'); 
 	link.href = uri; 
@@ -365,6 +375,7 @@ var sendData = function(){
 	document.body.appendChild(link); 
 	link.click(); 
 	document.body.removeChild(link);
+	*/
 	
 };
 /**
@@ -450,6 +461,7 @@ $(document).ready(function() {
 					sendData();
 				};
 				randomize();	
+				$("#canvas_wrap").css("cursor","none");
 				movementTime = 0;
 			} else {
 				console.log("fail!");
@@ -461,6 +473,7 @@ $(document).ready(function() {
 					sendData();
 				};
 				randomize();	
+				$("#canvas_wrap").css("cursor","inherit");
 				movementTime = 0;
 			} else {
 				console.log("fail!");

@@ -1,72 +1,41 @@
 var express = require('express');
+var sqlite3 = require('sqlite3');
 var app = express();
-
-app.get('/', function (req, res) {
-  res.send('Hello World!');
+var port = process.env.PORT || 1337;
+var db = new sqlite3.Database('data/demo');
+ 
+db.serialize(function() {
+    db.run("CREATE TABLE IF NOT EXISTS counts (key TEXT, value INTEGER)");
+    db.run("INSERT INTO counts (key, value) VALUES (?, ?)", "counter", 0);
 });
-
-var server = app.listen(8000);
-
-//var http = require("http");
-
-/*
-
-var app = require('http').createServer(handler);
-var io = require('socket.io')(app);
-var fs = require("fs");
-
-fs.writeFile("C:\\Users\\afoster\\Documents\\GitHub\\6.831_RS1\\testData.txt", "this is a test", function(err){
-  	if(err){
-  		return console.log(err);
-  	};
-  	console.log("The file was saved!");
-  });
-
-//app.listen(80);
-
-
-/*
-app.get('/', function(req, res){
-  res.sendfile(__dirname + 'index.html');
-  res.sendfile(__dirname + 'style.css');
-  res.sendfile(__dirname + 'main.js');
+ 
+ 
+ 
+var express = require('express');
+var app = express();
+ 
+app.get('/api/data', function(req, res){
+    db.get("SELECT value FROM counts", function(err, row){
+        res.json({ "count" : row.value });
+    });
 });
-
-/*
-function handler (req, res) {
-  fs.readFile(__dirname + '/index.html',
-  function (err, data) {
-    if (err) {
-      res.writeHead(500);
-      return res.end('Error loading index.html');
-    }
-
-    res.writeHead(200);
-    res.end(data);
-  });
-}
-*/
-/**
-
-io.on('connection', function (socket) {
-  socket.emit('news', { hello: 'world' });
-  socket.on('my other event', function (data) {
-    console.log(data);
-  });
+ 
+app.post('/api/data', function(req, res){
+    db.run("UPDATE counts SET value = value + 1 WHERE key = ?", "counter", function(err, row){
+        if (err){
+            console.err(err);
+            res.status(500);
+        }
+        else {
+            res.status(202);
+        }
+        res.end();
+    });
 });
-/*
-users = [];
+ 
+ 
+ 
+app.use(express.static('public'));
 
-connect().use(serveStatic("C:\\Users\\afoster\\Documents\\GitHub\\6.831_RS1")).listen(8080);
-
-var write = fs.createWriteStream("C:\\Users\\afoster\\Documents\\GitHub\\6.831_RS1\\test.txt", {'flags': 'a'});
-write.write("This is the first line of my log\n"); //will append to a log.  Let's talk monday about the other stuff
-*/
-
-
-
-http.createServer(function(request, response) {
-  response.writeHead(200, {"Content-Type": "text/plain"});
-  response.write("Hello World");
-  response.end();
-}).listen(8888);
+console.log("Submit GET or POST to http://localhost:" + port);
+app.listen(port);
