@@ -2,20 +2,44 @@
 
 
 
+
+
 // Server defined globals 
-var EWRatio = 3; 			// { "small": 1.33, "medium": 2, "large": 3 };
-var cursorType = "Bubble"; 	//{ "Point":"Point", "Bubble":"Bubble" }
-var amplitude = 512; 		// 256, 512, 768;
-var distractDensity = 1;	// between 0 and 1
-var width = 16; 			// 8, 16, 32
+var userID;
+
+
+
+
+
+
+
+
+
+
+
 
 
 // client defined globals
+var EWRatio_options = [1.33, 2, 3];
+var cursorType_options =["Point", "Bubble"];
+var amplitude_options = [256, 512, 768];
+var width_options = [8, 16, 32];
+
+var EWRatio; 			// { "small": 1.33, "medium": 2, "large": 3 };
+var cursorType; 	//{ "Point":"Point", "Bubble":"Bubble" }
+var amplitude; 		// 256, 512, 768;
+var distractDensity;	// between 0 and 1
+var width; 			// 8, 16, 32
+
+
+
+var in_session = false;
 var radius;
 var mainTarget;
 var mouseX;
 var mouseY;
-var mod;
+var effectiveWidth;
+var movementTime = 0;
 var slope;
 var slopeRad;
 var mousePoint;
@@ -25,19 +49,88 @@ var leftDistract;
 var rightDistract;
 var density;
 var points = [];
+var intro_text = [];
+
+var test_order_base = [];
+var test_order; 
+
+var initializeTestOrderBase = function(){
+	for(var i = 0; i <=26; i++){
+		test_order_base.push(i);
+	}
+}
+
+var latin_square = function(){
+ //for 
+};
 
 
-var initializeExperiment = function(){
+
+
+var runIntro = function(){
 	c = document.getElementById("experiment");
 	ctx=c.getContext("2d");
-	radius = width/2;
-	mod = width*EWRatio+radius;
-	offset = mod+width;
-	mainTarget = {"x":c.width/2, "y":c.height/2};
-	addTarget(mainTarget, radius, "green");
 	b = document.getElementById("bubble");
 	b_ctx=b.getContext("2d");
+
+	var intro_position = 0;
+	intro_text.push("<p>The purpose of this experiment is to test the effectiveness of a new style of mouse pointer, the bubble cursor.</p>");
+	intro_text.push("<p>Remember, we are testing the mouse pointer, not you!</p>");
+	intro_text.push("<p>This experiment includes 54 rounds and will take approximately one hour to complete.</p>");
+	intro_text.push("<p>You are free to stop the experiment at any time. You will be compensated for your time.</p>");
+	intro_text.push("<p>In this experiment, you are asked to click the green circle. If you successfully click the circle, the next round will begin.</p>");
+	intro_text.push("<p>Speed is a major factor of this experiment, so please try to click the green circle as quickly as you can.</p>");
+	intro_text.push("<p>You can practice above if you like.</p>");
+	intro_text.push("<p>The bubble cursor allows you to sucessfully click on the green circle without placing your mouse cursor directly over it.</p>");
+	intro_text.push("<p>So long as the green circle is within the blue highlighted area, it is clickable.</p>");
+	intro_text.push("<p>You can practice this above if you like.</p><p>Remember, you no longer have to have your mouse directly above the green circle!</p>");
+	intro_text.push("<p>If you are ready to begin the experiment, click next.</p>");
+
+	$("#next_button").click(function(evt){
+		if (intro_position < intro_text.length){
+			$("#text_box").empty();
+			$("#text_box").append(intro_text[intro_position]);
+			if (intro_position == 4){
+				initializeExperiment();
+				testing_circle();
+			};
+			if (intro_position == 7){
+				cursorType = "Bubble";
+			};
+		} else {
+			$("#next_button").hide();
+			$("#text_box").hide();
+			in_session = true;
+		};
+		intro_position++;
+	});
+
+	var initializeExperiment = function(){
+
+		
+		mainTarget = {"x":c.width/2, "y":c.height/2};
+		//initializeTestOrderBase();
+		
+
+	};
+
+	var testing_circle = function(){
+		cursorType = "Point";
+		width = 32;
+		EWRatio = 1.33;
+		amplitude = 256;
+		distractDensity = .75;
+		effectiveWidth = width*EWRatio;
+		radius = width/2;
+		offset = effectiveWidth+width;
+		addTarget(mainTarget, radius, "green");
+	};
+
+
 };
+
+
+
 
 
 var randomize = function(){
@@ -46,7 +139,7 @@ var randomize = function(){
 	mainTarget = getNextPosition(mainTarget);
 	addTarget(mainTarget, radius, "green");
 	calculateVector();
-	randomDistractors();
+	enclosingDistractors();
 	addIntermediates();
 
 };
@@ -55,10 +148,10 @@ var getNextPosition = function(last, deg){
 	var deltaRad = typeof deg !== "undefined" ? deg : getRandomDim(Math.PI*2);
 	var target = { "x": Math.round(amplitude*Math.cos(deltaRad)+ last.x), 
 					"y": Math.round(amplitude*Math.sin(deltaRad)+ last.y) };
-	if(target.x > radius && target.x < c.width-radius && target.y > radius && target.y < c.height-radius){
+	if(target.x > offset && target.x < c.width-offset && target.y > offset && target.y < c.height-offset){
 		return target;
 	} else {
-		return getNextPosition(last, deltaRad+Math.PI/180);
+		return getNextPosition(last, deltaRad+181*Math.PI/180);
 	};
 	
 };
@@ -91,39 +184,27 @@ var addTarget = function(point, radius, color){
 
 };
 
-var initialDistractors = function(){
-	nearDistract = {"x":mainTarget.x+mod, "y":mainTarget.y};
-	farDistract = {"x": mainTarget.x, "y": mainTarget.y+mod};
-	leftDistract = {"x": mainTarget.x-mod, "y": mainTarget.y};
-	rightDistract = { "x": mainTarget.x, "y": mainTarget.y-mod};
-};
 
-var randomDistractors = function(){
+var enclosingDistractors = function(){
 
 	slopeRad = Math.atan(slope);
 
-	nearDistract = {"x": Math.round(mod*Math.cos(slopeRad)+ mainTarget.x), 
-					"y": Math.round(mod*Math.sin(slopeRad)+ mainTarget.y)};
-	farDistract = {"x": Math.round(mod*Math.cos(Math.PI+slopeRad)+ mainTarget.x), 
-					"y": Math.round(mod*Math.sin(Math.PI+slopeRad)+ mainTarget.y)};
-	leftDistract = {"x": Math.round(mod*Math.cos(Math.PI/2+slopeRad)+ mainTarget.x),
-					"y": Math.round(mod*Math.sin(Math.PI/2+slopeRad)+ mainTarget.y)};	
-	rightDistract = {"x": Math.round(mod*Math.cos((3*Math.PI)/2+slopeRad)+ mainTarget.x), 
-					"y": Math.round(mod*Math.sin((3*Math.PI)/2+slopeRad)+ mainTarget.y)};
+	nearDistract = {"x": Math.round(effectiveWidth*Math.cos(slopeRad)+ mainTarget.x), 
+					"y": Math.round(effectiveWidth*Math.sin(slopeRad)+ mainTarget.y)};
+	farDistract = {"x": Math.round(effectiveWidth*Math.cos(Math.PI+slopeRad)+ mainTarget.x), 
+					"y": Math.round(effectiveWidth*Math.sin(Math.PI+slopeRad)+ mainTarget.y)};
+	var leftDistract = {"x": Math.round(effectiveWidth*Math.cos(Math.PI/2+slopeRad)+ mainTarget.x),
+					"y": Math.round(effectiveWidth*Math.sin(Math.PI/2+slopeRad)+ mainTarget.y)};	
+	var rightDistract = {"x": Math.round(effectiveWidth*Math.cos((3*Math.PI)/2+slopeRad)+ mainTarget.x), 
+					"y": Math.round(effectiveWidth*Math.sin((3*Math.PI)/2+slopeRad)+ mainTarget.y)};
 
-	addDistractors(nearDistract, farDistract, leftDistract, rightDistract);
-
-};
-
-
-
-var addDistractors = function(near, far, left, right){
-	addTarget(near, radius);
-	addTarget(far, radius);
-	addTarget(left, radius);
-	addTarget(right, radius);
+	addTarget(nearDistract, radius);
+	addTarget(farDistract, radius);
+	addTarget(leftDistract, radius);
+	addTarget(rightDistract, radius);
 
 };
+
 
 var getDistance = function(point1, point2){
 	var rise = point1.y - point2.y;
@@ -142,7 +223,7 @@ var getSlope = function(point1, point2){
 
 
 var calculateVector = function(){
-	amplitude = getDistance(mousePoint, mainTarget);
+	realAmplitude = getDistance(mousePoint, mainTarget);
 	slope = getSlope(mousePoint, mainTarget);
 };
 
@@ -178,7 +259,7 @@ var is_overlaping = function(center1, center2, radius){
 
 
 var addIntermediates = function(){
-	var angle_bisect_len = amplitude-mod-radius;
+	var angle_bisect_len = realAmplitude-effectiveWidth-radius;
 	var num_intermediates = Math.floor(angle_bisect_len/width)*distractDensity;
 	var triangleMass = num_intermediates;
 	var triangleVolume = -Math.pow(angle_bisect_len,2)*Math.tan(160);
@@ -186,9 +267,6 @@ var addIntermediates = function(){
 	var b_point;
 	var c_point;
 	density = triangleMass/triangleVolume;
-	//console.log("Triangle Mass: ", triangleMass);
-	//console.log("Triangle Volume: ", triangleVolume);
-	//console.log("Triangle Density: ",density);
 	for(var i = 1; i<=num_intermediates-1; i++){
 		var pointDistance = len_between_inter*i;
 		var adjacent_len = Math.tan(160)*pointDistance;
@@ -214,6 +292,7 @@ var addIntermediates = function(){
 	};
 
 
+
 	var adjacent_len = Math.tan(160)*angle_bisect_len;
 	if(mainTarget.x > mouseX){
 		var b_x = Math.round(adjacent_len*Math.cos(Math.PI/2+slopeRad)+farDistract.x);
@@ -228,12 +307,11 @@ var addIntermediates = function(){
 		var c_y = Math.round(-adjacent_len*Math.sin(3*Math.PI/2+slopeRad)+nearDistract.y);
 
 	};
+
 	b_point = {"x": b_x,"y": b_y};
 	c_point = {"x": c_x,"y": c_y};
 
-	var mass = density*c.width*c.height
-	//console.log("volume: ",c.width*c.height);
-	//console.log("mass: ",mass);
+	var mass = density*c.width*c.height;
 
 	
 
@@ -242,10 +320,9 @@ var addIntermediates = function(){
 		var random_x = getRandomDim(c.width);
 		var random_y = getRandomDim(c.height);
 		var random_point = {"x": random_x, "y": random_y};
-		if((!is_in_circle(random_point, mainTarget, mod+radius)) 
+		if((!is_in_circle(random_point, mainTarget, effectiveWidth+radius)) 
 						&& (!is_in_triangle(random_point, mousePoint, b_point, c_point))) {
 			for (var j = 0; j<points.length; j++){
-				//console.log("j is: ",j)
 				if(is_overlaping(points[j], random_point, radius)){
 					overlap = true;
 				};
@@ -256,6 +333,7 @@ var addIntermediates = function(){
 			
 		};
 	};	
+	
 
 };
 
@@ -272,16 +350,38 @@ var drawBubble = function(point1, radius1, point2, radius2, color){
 };
 
 var sendData = function(){
+	var data = userID+", "+movementTime+", "+cursorType+", "+ amplitude+", "+width+", "+effectiveWidth;
+	fs.appendFile("C:\\Users\\afoster\\Documents\\GitHub\\6.831_RS1\\testData.txt", data, function(err){
+		if(err){
+			return console.log(err);
+		};
+	});
 
+	var uri = 'data:text/csv;charset=utf-8,' + escape(CSV); 
+	var link = document.createElement('a'); 
+	link.href = uri; 
+	link.style = 'visibility: hidden'; 
+	link.download = fileName + '.csv'; 
+	document.body.appendChild(link); 
+	link.click(); 
+	document.body.removeChild(link);
+	
 };
+/**
+  var socket = io('http://localhost');
+  socket.on('news', function (data) {
+    console.log(data);
+    socket.emit('my other event', { my: 'data' });
+  });
+*/
 
 
 
 $(document).ready(function() {
 
-	var timer = 0;
+	runIntro();
 
-	initializeExperiment();
+	//initializeExperiment();
 	var parentOffset = $("#experiment").offset();
 	var equal_spaced;
 	var _closest_point;
@@ -291,6 +391,12 @@ $(document).ready(function() {
         mouseX = e.pageX - parentOffset.left;
         mouseY = e.pageY - parentOffset.top;
         mousePoint = {"x": mouseX, "y": mouseY};
+
+
+    	setInterval(function(){
+        	movementTime++;
+        }, 100);	
+        
 
         if(cursorType == "Bubble"){
         	setInterval(function(){
@@ -327,8 +433,8 @@ $(document).ready(function() {
 	        		_closest_point = closest_point;
 	        		drawBubble(mousePoint, bubble_size, closest_point, radius*1.33, bubble_color);
 	        	};
-        	}, 100);	
-        }
+        	}, 30);	
+        };
         
 
 	});
@@ -340,16 +446,22 @@ $(document).ready(function() {
 		if(cursorType == "Bubble"){
 			if (!equal_spaced && _closest_point == points[0]){
 				console.log("success!");
+				if (in_session){
+					sendData();
+				};
 				randomize();	
-				timer = 0;
+				movementTime = 0;
 			} else {
 				console.log("fail!");
 			};
 		} else {
 			if(distance <= radius){
 				console.log("success!");
+				if (in_session){
+					sendData();
+				};
 				randomize();	
-				timer = 0;
+				movementTime = 0;
 			} else {
 				console.log("fail!");
 			}
@@ -357,6 +469,11 @@ $(document).ready(function() {
 
 
 	});
+
+	
+
+
+
 
 
 });

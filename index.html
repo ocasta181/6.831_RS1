@@ -15,17 +15,24 @@
 
     <!-- Load any supplemental Javascript libraries here -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.3.4.js"></script>
     <script src="main.js"></script>
   </head>
 
   <body>
+    <!--
     <div id="title">
       <h1>Bubble Cursor Experiment</h1>
     </div>
+  -->
     <div id="canvas_wrap">
       <canvas id="experiment" width="1400" height="1000"></canvas>
       <canvas id="bubble" width="1400" height="1000"></canvas>
-      </map>
+     
+    </div>
+    <div id = "intro_wrap">
+      <div id = "text_box"><p>Welcome to the Bubble Cursor Experiment!</p><p>Click next to begin</p></div>
+      <button id="next_button" type="button">Next</button>
     </div>
 
   </body>
