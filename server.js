@@ -29,7 +29,16 @@ var generate_latin_square = function(){
     };
 
  };
+
+ for (var i = 0; i < userID%27; i++){
+    var shift  = latin_square_base.shift();
+    latin_square_base.push(shift);
+ };
+
 };
+
+
+
 
  
 

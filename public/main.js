@@ -341,7 +341,7 @@ var drawBubble = function(point1, radius1, point2, radius2, color){
 
 var sendData = function(){
 	var userID = 1;
-	var data = userID+", "+movementTime+", "+cursorType+", "+ amplitude+", "+width+", "+effectiveWidth;
+	var data = userID+","+movementTime+","+cursorType+","+ amplitude+","+width+","+effectiveWidth;
 	console.log(data);
 	$.ajax({
 	  type: "POST",
