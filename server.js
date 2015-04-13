@@ -1,36 +1,53 @@
 var express = require('express');
-var sqlite3 = require('sqlite3');
 var app = express();
 var port = process.env.PORT || 1337;
-var db = new sqlite3.Database('data/demo');
+var fs = require("fs");
+
+var EWRatio_options = [1.33, 2, 3];
+var cursorType_options =["Point", "Bubble"];
+var amplitude_options = [256, 512, 768];
+var width_options = [8, 16, 32];
+var userID;
+
+var test_order_base = [];
+var test_order; 
+var latin_square_base = [];
+var current_latin_square = [];
+
+var initializeTestOrderBase = function(){
+    for(var i = 0; i <=26; i++){
+        test_order_base.push(i);
+    }
+}
+
+var generate_latin_square = function(){
+ for (var i = 0; i < 3; i++){
+    for(var j = 0; j < 3; j++){
+        for (var k = 0; k < 3; k++){
+            latin_square_base.push({EWRatio: EWRatio_options[i], amplitude: amplitude_options[j], width: width_options[k]});
+        };
+    };
+
+ };
+};
+
  
-db.serialize(function() {
-    db.run("CREATE TABLE IF NOT EXISTS counts (key TEXT, value INTEGER)");
-    db.run("INSERT INTO counts (key, value) VALUES (?, ?)", "counter", 0);
-});
+
  
- 
+ var dataFile = "data/results.txt"
  
 var express = require('express');
 var app = express();
  
 app.get('/api/data', function(req, res){
-    db.get("SELECT value FROM counts", function(err, row){
-        res.json({ "count" : row.value });
-    });
+    res.send("test");
 });
  
 app.post('/api/data', function(req, res){
-    db.run("UPDATE counts SET value = value + 1 WHERE key = ?", "counter", function(err, row){
-        if (err){
-            console.err(err);
-            res.status(500);
-        }
-        else {
-            res.status(202);
-        }
-        res.end();
-    });
+    console.log("req: ",req.body);
+    var data = req.body.data;
+    
+    fs.appendFile(dataFile, data);
 });
  
  
