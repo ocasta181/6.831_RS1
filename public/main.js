@@ -2,38 +2,15 @@
 
 
 
-
-
-// Server defined globals 
-var userID;
-
-
-
-
-
-
-
-
-
-
-
-
-
-// client defined globals
-var EWRatio_options = [1.33, 2, 3];
-var cursorType_options =["Point", "Bubble"];
-var amplitude_options = [256, 512, 768];
-var width_options = [8, 16, 32];
-
 var EWRatio; 			// { "small": 1.33, "medium": 2, "large": 3 };
 var cursorType; 	//{ "Point":"Point", "Bubble":"Bubble" }
 var amplitude; 		// 256, 512, 768;
 var distractDensity;	// between 0 and 1
 var width; 			// 8, 16, 32
-
-
+var latin_square;
 
 var in_session = false;
+var test_over = false;
 var radius;
 var mainTarget;
 var mouseX;
@@ -51,30 +28,6 @@ var density;
 var points = [];
 var intro_text = [];
 
-var test_order_base = [];
-var test_order; 
-var latin_square_base = [];
-var current_latin_square = [];
-
-var initializeTestOrderBase = function(){
-	for(var i = 0; i <=26; i++){
-		test_order_base.push(i);
-	}
-}
-
-var generate_latin_square = function(){
- for (var i = 0; i < 3; i++){
- 	for(var j = 0; j < 3; j++){
- 		for (var k = 0; k < 3; k++){
- 			latin_square_base.push({EWRatio: EWRatio_options[i], amplitude: amplitude_options[j], width: width_options[k]});
- 		};
- 	};
-
- };
-};
-
-
-
 
 var runIntro = function(){
 	c = document.getElementById("experiment");
@@ -85,8 +38,8 @@ var runIntro = function(){
 	var intro_position = 0;
 	intro_text.push("<p>The purpose of this experiment is to test the effectiveness of a new style of mouse pointer, the bubble cursor.</p>");
 	intro_text.push("<p>Remember, we are testing the mouse pointer, not you!</p>");
-	intro_text.push("<p>This experiment includes 54 rounds and will take approximately one hour to complete.</p>");
-	intro_text.push("<p>You are free to stop the experiment at any time. You will be compensated for your time.</p>");
+	intro_text.push("<p>This experiment includes 54 rounds and will take approximately 15 minutes to complete.</p>");
+	intro_text.push("<p>You are free to stop the experiment at any time.</p>");
 	intro_text.push("<p>In this experiment, you are asked to click the green circle. If you successfully click the circle, the next round will begin.</p>");
 	intro_text.push("<p>Speed is a major factor of this experiment, so please try to click the green circle as quickly as you can.</p>");
 	intro_text.push("<p>You can practice above if you like.</p>");
@@ -110,6 +63,16 @@ var runIntro = function(){
 			$("#next_button").hide();
 			$("#text_box").hide();
 			in_session = true;
+			initializeExperiment();
+			testing_circle();
+			getNewIndependantVariables();
+			cursorType = starting_pointer;
+			if (cursorType =="Bubble"){
+				$("#canvas_wrap").css("cursor","none");
+			} else {
+				$("#canvas_wrap").css("cursor","inherit");
+			};
+
 		};
 		intro_position++;
 	});
@@ -124,11 +87,13 @@ var runIntro = function(){
 	};
 
 	var testing_circle = function(){
+		points = [];
+		ctx.clearRect(0,0,c.width,c.height);
 		cursorType = "Point";
 		width = 32;
 		EWRatio = 3;
 		amplitude = 256;
-		distractDensity = .75;
+		distractDensity = 1;
 		effectiveWidth = width*EWRatio;
 		radius = width/2;
 		offset = effectiveWidth+width;
@@ -157,11 +122,10 @@ var randomize = function(){
 };
 
 var getNextPosition = function(last, deg){
-	console.log("in next position");
 	var deltaRad = typeof deg !== "undefined" ? deg : getRandomDim(Math.PI*2);
 	var target = { "x": Math.round(amplitude*Math.cos(deltaRad)+ last.x), 
 					"y": Math.round(amplitude*Math.sin(deltaRad)+ last.y) };
-	if(target.x > offset && target.x < c.width-offset && target.y > offset && target.y < c.height-offset){
+	if(target.x > radius && target.x < c.width-radius && target.y > radius && target.y < c.height-radius){
 		return target;
 	} else {
 		return getNextPosition(last, deltaRad+181*Math.PI/180);
@@ -301,7 +265,20 @@ var addIntermediates = function(){
 			var new_y = Math.round(adjacent_len*Math.sin(3*Math.PI/2+slopeRad)+new_y);
 		};
 		var point = {"x": new_x,"y": new_y};
-		addTarget(point,radius);
+		console.log("prepairing to input point: ", point);
+		if(!is_in_circle(point, mainTarget, effectiveWidth+radius)){
+			var overlap = false;
+			console.log("point is not in the circle")
+			for (var j = 0; j<points.length; j++){
+				if(is_overlaping(points[j], point, radius)){
+					overlap = true;
+				};
+			};
+			if (!overlap){
+				addTarget(point, radius);	
+			};
+			
+		};
 	};
 
 
@@ -362,45 +339,64 @@ var drawBubble = function(point1, radius1, point2, radius2, color){
 
 };
 
+var recieveData = function(){
+	$.getJSON("/api/data", function(results){
+		latin_square = results.latin_square_custom;
+		starting_pointer = results.starting_pointer;
+		userID = results.userID;
+	});
+};
+
 var sendData = function(){
-	var data = userID+", "+movementTime+", "+cursorType+", "+ amplitude+", "+width+", "+effectiveWidth;
+	var data = userID+","+movementTime+","+cursorType+","+ amplitude+","+width+","+effectiveWidth;
 	console.log(data);
-	//"C:\\Users\\afoster\\Documents\\GitHub\\6.831_RS1\\testData.txt"
-	/**
-	var uri = 'data:text/csv;charset=utf-8,' + escape(CSV); 
-	var link = document.createElement('a'); 
-	link.href = uri; 
-	link.style = 'visibility: hidden'; 
-	link.download = fileName + '.csv'; 
-	document.body.appendChild(link); 
-	link.click(); 
-	document.body.removeChild(link);
-	*/
+	$.ajax({
+	  type: "POST",
+	  url: "/api/data",
+	  data: { results: data },
+	  success: function(){
+	  	console.log("It's Posted...");
+	  }
+	});
 	
 };
-/**
-  var socket = io('http://localhost');
-  socket.on('news', function (data) {
-    console.log(data);
-    socket.emit('my other event', { my: 'data' });
-  });
-*/
 
+var getNewIndependantVariables = function(pointer){
+	EWRatio = latin_square[pointer].EWRatio;
+	amplitude = latin_square[pointer].amplitude; 
+	width = latin_square[pointer].width; 
+	radius = width/2;
+	effectiveWidth = width*EWRatio;
+	offset = effectiveWidth+width;
+
+};
 
 
 $(document).ready(function() {
-
+	recieveData();
 	runIntro();
 
+
 	//initializeExperiment();
-	var parentOffset = $("#experiment").offset();
+	var parentoffset = $("#experiment").offset();
 	var equal_spaced;
 	var _closest_point;
+	var heat = 0;
+	var latin_square_pointer = 0;
+	var flip_counter = 0;
 
 	$("#bubble").mousemove(function(e){
+		if(test_over){
+			$("#text_box").show();
+			in_session = false;
+			points = [];
+			ctx.clearRect(0,0,c.width,c.height);
+			$("#text_box").empty();
+			$("#text_box").append("<p>The test is over. Thank you for your help!</p>");
+		};
     	e.preventDefault();
-        mouseX = e.pageX - parentOffset.left;
-        mouseY = e.pageY - parentOffset.top;
+        mouseX = e.pageX - parentoffset.left;
+        mouseY = e.pageY - parentoffset.top;
         mousePoint = {"x": mouseX, "y": mouseY};
 
 
@@ -456,12 +452,35 @@ $(document).ready(function() {
 		
 		if(cursorType == "Bubble"){
 			if (!equal_spaced && _closest_point == points[0]){
+				
 				console.log("success!");
 				if (in_session){
+					console.log("width: ",width);
+					console.log("EW: ",effectiveWidth);		
+					heat++;
 					sendData();
+					if(heat >= 5){
+						if(latin_square_pointer<2){
+							heat = 0;
+							getNewIndependantVariables(latin_square_pointer);
+							console.log("width: ",width);
+							console.log("EW: ",effectiveWidth);
+							latin_square_pointer++;
+						} else {
+							if (flip_counter < 1){
+								latin_square_pointer = 0;
+								cursorType = "Point";
+								flip_counter++;
+								heat = 0;
+							} else {
+								test_over=true;
+							};
+						};
+					};
 				};
 				randomize();	
-				$("#canvas_wrap").css("cursor","none");
+				$("#canvas_wrap").css("cursor","crosshair");
+				
 				movementTime = 0;
 			} else {
 				console.log("fail!");
@@ -470,15 +489,42 @@ $(document).ready(function() {
 			if(distance <= radius){
 				console.log("success!");
 				if (in_session){
+					console.log("width: ",width);
+					console.log("EW: ",effectiveWidth);
+					heat++;
 					sendData();
+					if(heat >= 5){
+						if(latin_square_pointer<2){
+							console.log("width: ",width);
+							console.log("EW: ",effectiveWidth);
+							heat = 0;
+							getNewIndependantVariables(latin_square_pointer);
+							latin_square_pointer++;
+						} else {
+							if (flip_counter < 1){
+								flip_counter++;
+								heat = 0;
+								latin_square_pointer = 0;
+								cursorType = "Bubble";
+							} else {
+								test_over=true;
+							};
+						};
+					};
 				};
 				randomize();	
 				$("#canvas_wrap").css("cursor","inherit");
+				
 				movementTime = 0;
 			} else {
 				console.log("fail!");
 			}
 		};
+		console.log("cursorType: ", cursorType);
+		console.log("heat: ", heat);
+		console.log("latin_square_pointer: ", latin_square_pointer);
+		console.log("flip_counter: ", flip_counter);
+
 
 
 	});

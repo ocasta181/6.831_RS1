@@ -1,0 +1,33 @@
+Collaborators: 
+
+	Tim Schroeder
+		Member of the Technical Staff - Vidder
+		Tim helped debug my server.js file and helped educate me on serverside coding.
+	Max Abrahams
+		Quality Developer - InterSystems
+		Max gave me advice on how to set up my backend. He also helped me with some Trigonometry.
+	John Reiley
+		Technical Writer - InterSystems
+		John helped me with some Trigonometry.
+	Shaun Rong
+		Student - MIT
+		I asked Shaun how he saved his files to disk. I did not use his method. 
+	Birkan Uzun
+		Student - MIT
+		I asked Birkan how he saved his files to disk. I did not use his method.
+
+
+Screencast URL:
+
+Platform Requirements:
+
+
+Instructions:
+
+	1. Install Node.js
+	2. Open a shell and cd to the folder that contains this file.
+	3. Run the following code:
+		npm install
+		npm server.js
+
+	4. Open a webrowser and navigate to "http://localhost:1337/"
