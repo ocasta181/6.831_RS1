@@ -67,11 +67,7 @@ var runIntro = function(){
 			testing_circle();
 			getNewIndependantVariables();
 			cursorType = starting_pointer;
-			if (cursorType =="Bubble"){
-				$("#canvas_wrap").css("cursor","none");
-			} else {
-				$("#canvas_wrap").css("cursor","inherit");
-			};
+
 
 		};
 		intro_position++;
@@ -265,10 +261,8 @@ var addIntermediates = function(){
 			var new_y = Math.round(adjacent_len*Math.sin(3*Math.PI/2+slopeRad)+new_y);
 		};
 		var point = {"x": new_x,"y": new_y};
-		console.log("prepairing to input point: ", point);
 		if(!is_in_circle(point, mainTarget, effectiveWidth+radius)){
 			var overlap = false;
-			console.log("point is not in the circle")
 			for (var j = 0; j<points.length; j++){
 				if(is_overlaping(points[j], point, radius)){
 					overlap = true;
@@ -378,7 +372,6 @@ $(document).ready(function() {
 
 
 	//initializeExperiment();
-	var parentoffset = $("#experiment").offset();
 	var equal_spaced;
 	var _closest_point;
 	var heat = 0;
@@ -395,6 +388,7 @@ $(document).ready(function() {
 			$("#text_box").append("<p>The test is over. Thank you for your help!</p>");
 		};
     	e.preventDefault();
+    	var parentoffset = $("#experiment").offset();
         mouseX = e.pageX - parentoffset.left;
         mouseY = e.pageY - parentoffset.top;
         mousePoint = {"x": mouseX, "y": mouseY};
@@ -448,23 +442,18 @@ $(document).ready(function() {
 
 
 	$("#bubble").click(function(e){
-		var distance = getDistance(mousePoint, mainTarget);
 		
 		if(cursorType == "Bubble"){
+			console.log("closest point: ", _closest_point);
 			if (!equal_spaced && _closest_point == points[0]){
-				
 				console.log("success!");
-				if (in_session){
-					console.log("width: ",width);
-					console.log("EW: ",effectiveWidth);		
+				if (in_session){	
 					heat++;
 					sendData();
 					if(heat >= 5){
-						if(latin_square_pointer<2){
+						if(latin_square_pointer<27){
 							heat = 0;
 							getNewIndependantVariables(latin_square_pointer);
-							console.log("width: ",width);
-							console.log("EW: ",effectiveWidth);
 							latin_square_pointer++;
 						} else {
 							if (flip_counter < 1){
@@ -478,25 +467,23 @@ $(document).ready(function() {
 						};
 					};
 				};
-				randomize();	
-				$("#canvas_wrap").css("cursor","crosshair");
+				randomize();
 				
 				movementTime = 0;
 			} else {
 				console.log("fail!");
 			};
 		} else {
-			if(distance <= radius){
+			console.log("radius: ",radius);
+			console.log("mousePoint: ", mousePoint);
+			console.log("mainTarget: ", mainTarget);
+			if(is_in_circle(mousePoint, mainTarget, radius)){
 				console.log("success!");
 				if (in_session){
-					console.log("width: ",width);
-					console.log("EW: ",effectiveWidth);
 					heat++;
 					sendData();
 					if(heat >= 5){
-						if(latin_square_pointer<2){
-							console.log("width: ",width);
-							console.log("EW: ",effectiveWidth);
+						if(latin_square_pointer<27){
 							heat = 0;
 							getNewIndependantVariables(latin_square_pointer);
 							latin_square_pointer++;
@@ -512,18 +499,13 @@ $(document).ready(function() {
 						};
 					};
 				};
-				randomize();	
-				$("#canvas_wrap").css("cursor","inherit");
+				randomize();
 				
 				movementTime = 0;
 			} else {
 				console.log("fail!");
 			}
 		};
-		console.log("cursorType: ", cursorType);
-		console.log("heat: ", heat);
-		console.log("latin_square_pointer: ", latin_square_pointer);
-		console.log("flip_counter: ", flip_counter);
 
 
 

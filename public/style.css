@@ -4,6 +4,7 @@ h1{
 
 #canvas_wrap{
 	position: relative;
+	cursor: crosshair;
 	background-color: grey;
 	width: 1414px;
 	height: 1014px;
