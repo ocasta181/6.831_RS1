@@ -65,7 +65,7 @@ var runIntro = function(){
 			in_session = true;
 			initializeExperiment();
 			testing_circle();
-			getNewIndependantVariables();
+			getNewIndependantVariables(0);
 			cursorType = starting_pointer;
 
 
@@ -356,6 +356,7 @@ var sendData = function(){
 };
 
 var getNewIndependantVariables = function(pointer){
+	console.log(latin_square);
 	EWRatio = latin_square[pointer].EWRatio;
 	amplitude = latin_square[pointer].amplitude; 
 	width = latin_square[pointer].width; 
@@ -481,7 +482,7 @@ $(document).ready(function() {
 
 
 	$("#bubble").click(function(e){
-		
+		console.log("clicked");
 		if(cursorType == "Bubble"){
 			console.log("closest point: ", _closest_point);
 			if (!equal_spaced && _closest_point == points[0]){

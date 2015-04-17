@@ -15,7 +15,7 @@ h1{
 	position: absolute;
 	background-color: white;
 	margin: 7px 7px;
-	z-index: 1000
+	z-index: 0
 }
 
 #bubble{
