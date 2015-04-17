@@ -366,26 +366,65 @@ var getNewIndependantVariables = function(pointer){
 };
 
 
+
+
 $(document).ready(function() {
 	recieveData();
 	runIntro();
 
-
-	//initializeExperiment();
 	var equal_spaced;
 	var _closest_point;
 	var heat = 0;
 	var latin_square_pointer = 0;
 	var flip_counter = 0;
 
+/*
+	$("#likert_form").ajaxForm({
+        url : 'myscript.php', // or whatever
+        dataType : 'json',
+        success : function (response) {
+            alert("The server says: " + response);
+        }
+    });
+*/
+	$("#form_submit").click(function(){
+		var elem = this.parentElement.elements;
+		var str;
+		for (var i = 0; i < elem.length; i++){
+			if($(elem[i].id).is(':checked')) {
+				console.log(elem[i]);
+			}
+		};
+	});
+
+
+/*
+	submit(function(e){
+		e.preventDefault();
+		console.log(e);
+		
+		$.ajax({
+		  type: "POST",
+		  url: "/api/data",
+		  data: { results: data },
+		  success: function(){
+		  	console.log("It's Posted...");
+		  }
+		});
+
+	});
+*/
 	$("#bubble").mousemove(function(e){
 		if(test_over){
 			$("#text_box").show();
 			in_session = false;
 			points = [];
 			ctx.clearRect(0,0,c.width,c.height);
+			$("#canvas_wrap").hide();
 			$("#text_box").empty();
-			$("#text_box").append("<p>The test is over. Thank you for your help!</p>");
+			$("#text_box").append("<p>Thanks for participating in the test! Please rate your experience in the form below.</p>");
+			$("#likert_form").show();
+
 		};
     	e.preventDefault();
     	var parentoffset = $("#experiment").offset();

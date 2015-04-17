@@ -2,7 +2,7 @@ var express = require('express');
 var fs = require("fs");
 var app = express();
 var port = process.env.PORT || 1337;
-var dataFile = "example-data.txt"
+var dataFile = "test-data.csv"
 
 var bodyParser = require('body-parser')
 app.use( bodyParser.json() );       // to support JSON-encoded bodies
