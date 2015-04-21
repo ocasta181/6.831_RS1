@@ -10,6 +10,7 @@ var width; 			// 8, 16, 32
 var latin_square;
 
 var in_session = false;
+var pre_session = false;
 var test_over = false;
 var radius;
 var mainTarget;
@@ -62,13 +63,9 @@ var runIntro = function(){
 		} else {
 			$("#next_button").hide();
 			$("#text_box").hide();
-			in_session = true;
+			pre_session = true;
 			initializeExperiment();
 			testing_circle();
-			getNewIndependantVariables(0);
-			cursorType = starting_pointer;
-
-
 		};
 		intro_position++;
 	});
@@ -111,9 +108,6 @@ var randomize = function(){
 	calculateVector();
 	enclosingDistractors();
 	addIntermediates();
-	if(cursorType == "Bubble"){
-
-	}
 
 };
 
@@ -147,7 +141,7 @@ var addTarget = function(point, radius, color){
 		ctx.fillStyle = color;
 		ctx.fill();		
 	} else {
-		ctx.lineWidth = radius/4;
+		ctx.lineWidth = radius/5;
 		ctx.strokeStyle = color;
 		ctx.stroke();
 	}
@@ -323,14 +317,15 @@ var addIntermediates = function(){
 
 
 var drawBubble = function(point1, radius1, point2, radius2, color){
-	b_ctx.clearRect(0,0,b.width,b.height);
-	b_ctx.beginPath();
-	b_ctx.arc(point1.x, point1.y, radius1, 0, 2 * Math.PI);
-	b_ctx.arc(point2.x, point2.y, radius2, 0, 2 * Math.PI);
-	b_ctx.fillStyle = color;
-	b_ctx.fill();
-	b_ctx.closePath();
-
+	if(cursorType == "Bubble"){
+		b_ctx.clearRect(0,0,b.width,b.height);
+		b_ctx.beginPath();
+		b_ctx.arc(point1.x, point1.y, radius1, 0, 2 * Math.PI);
+		b_ctx.arc(point2.x, point2.y, radius2, 0, 2 * Math.PI);
+		b_ctx.fillStyle = color;
+		b_ctx.fill();
+		b_ctx.closePath();
+	};		
 };
 
 var recieveData = function(){
@@ -341,22 +336,33 @@ var recieveData = function(){
 	});
 };
 
-var sendData = function(){
-	var data = userID+","+movementTime+","+cursorType+","+ amplitude+","+width+","+effectiveWidth;
-	console.log(data);
+
+
+var sendData = function(toSend){
+	console.log(toSend);
 	$.ajax({
-	  type: "POST",
-	  url: "/api/data",
-	  data: { results: data },
-	  success: function(){
-	  	console.log("It's Posted...");
-	  }
+		type: "POST",
+		url: "/api/data",
+		data: { results: toSend },
+		error: function(j, stat, err){
+			console.log(stat);
+			console.log(err);
+		},
+		success: function(){
+			console.log("It's Posted...");
+		}
 	});
-	
+
 };
 
+
+var sendTestData = function(){
+	var data = userID+","+movementTime+","+cursorType+","+ amplitude+","+width+","+effectiveWidth;
+	sendData(data);
+};
+
+
 var getNewIndependantVariables = function(pointer){
-	console.log(latin_square);
 	EWRatio = latin_square[pointer].EWRatio;
 	amplitude = latin_square[pointer].amplitude; 
 	width = latin_square[pointer].width; 
@@ -365,8 +371,6 @@ var getNewIndependantVariables = function(pointer){
 	offset = effectiveWidth+width;
 
 };
-
-
 
 
 $(document).ready(function() {
@@ -379,42 +383,21 @@ $(document).ready(function() {
 	var latin_square_pointer = 0;
 	var flip_counter = 0;
 
-/*
-	$("#likert_form").ajaxForm({
-        url : 'myscript.php', // or whatever
-        dataType : 'json',
-        success : function (response) {
-            alert("The server says: " + response);
-        }
-    });
-*/
+
 	$("#form_submit").click(function(){
-		var elem = this.parentElement.elements;
-		var str;
-		for (var i = 0; i < elem.length; i++){
-			if($(elem[i].id).is(':checked')) {
-				console.log(elem[i]);
-			}
-		};
-	});
-
-
-/*
-	submit(function(e){
-		e.preventDefault();
-		console.log(e);
-		
-		$.ajax({
-		  type: "POST",
-		  url: "/api/data",
-		  data: { results: data },
-		  success: function(){
-		  	console.log("It's Posted...");
-		  }
+		var data = userID+", ";
+		$("input:radio:checked").each(function(){
+			var score = this.id;
+			data = data+score+", ";
 		});
-
+		data = data.substring(0, data.length - 2);
+		sendData(data);
+		$("#form_submit").hide();
+		$("#text_box").empty();
+		$("#text_box").append("<p>All set. Thanks again!</p>")
 	});
-*/
+
+
 	$("#bubble").mousemove(function(e){
 		if(test_over){
 			$("#text_box").show();
@@ -474,7 +457,7 @@ $(document).ready(function() {
 	        		_closest_point = closest_point;
 	        		drawBubble(mousePoint, bubble_size, closest_point, radius*1.33, bubble_color);
 	        	};
-        	}, 30);	
+        	}, 100);	
         };
         
 
@@ -482,14 +465,12 @@ $(document).ready(function() {
 
 
 	$("#bubble").click(function(e){
-		console.log("clicked");
 		if(cursorType == "Bubble"){
-			console.log("closest point: ", _closest_point);
 			if (!equal_spaced && _closest_point == points[0]){
 				console.log("success!");
 				if (in_session){	
 					heat++;
-					sendData();
+					sendTestData();
 					if(heat >= 5){
 						if(latin_square_pointer<27){
 							heat = 0;
@@ -506,6 +487,11 @@ $(document).ready(function() {
 							};
 						};
 					};
+				} else if(pre_session){
+					getNewIndependantVariables(0);
+					cursorType = starting_pointer;
+					pre_session = false;
+					in_session = true;
 				};
 				randomize();
 				
@@ -514,14 +500,11 @@ $(document).ready(function() {
 				console.log("fail!");
 			};
 		} else {
-			console.log("radius: ",radius);
-			console.log("mousePoint: ", mousePoint);
-			console.log("mainTarget: ", mainTarget);
 			if(is_in_circle(mousePoint, mainTarget, radius)){
 				console.log("success!");
 				if (in_session){
 					heat++;
-					sendData();
+					sendTestData();
 					if(heat >= 5){
 						if(latin_square_pointer<27){
 							heat = 0;
@@ -538,6 +521,11 @@ $(document).ready(function() {
 							};
 						};
 					};
+				} else if(pre_session){
+					getNewIndependantVariables(0);
+					cursorType = starting_pointer;
+					pre_session = false;
+					in_session = true;
 				};
 				randomize();
 				
