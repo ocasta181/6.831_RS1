@@ -66,6 +66,7 @@ var runIntro = function(){
 			pre_session = true;
 			initializeExperiment();
 			testing_circle();
+			b_ctx.clearRect(0,0,b.width,b.height);
 		};
 		intro_position++;
 	});
