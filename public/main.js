@@ -393,7 +393,7 @@ $(document).ready(function() {
 		});
 		data = data.substring(0, data.length - 2);
 		sendData(data);
-		$("#form_submit").hide();
+		$("#likert_form").hide();
 		$("#text_box").empty();
 		$("#text_box").append("<p>All set. Thanks again!</p>")
 	});
@@ -472,7 +472,7 @@ $(document).ready(function() {
 				if (in_session){	
 					heat++;
 					sendTestData();
-					if(heat >= 5){
+					if(heat >= 10){
 						if(latin_square_pointer<27){
 							heat = 0;
 							getNewIndependantVariables(latin_square_pointer);
@@ -506,7 +506,7 @@ $(document).ready(function() {
 				if (in_session){
 					heat++;
 					sendTestData();
-					if(heat >= 5){
+					if(heat >= 10){
 						if(latin_square_pointer<27){
 							heat = 0;
 							getNewIndependantVariables(latin_square_pointer);
