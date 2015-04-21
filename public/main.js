@@ -28,6 +28,7 @@ var rightDistract;
 var density;
 var points = [];
 var intro_text = [];
+var test_data = "";
 
 
 var runIntro = function(){
@@ -341,6 +342,9 @@ var recieveData = function(){
 
 var sendData = function(toSend){
 	console.log(toSend);
+	test_data = test_data+"\n"+toSend;
+	console.log(test_data);
+	/*
 	$.ajax({
 		type: "POST",
 		url: "/api/data",
@@ -353,6 +357,7 @@ var sendData = function(toSend){
 			console.log("It's Posted...");
 		}
 	});
+*/
 
 };
 
@@ -384,6 +389,10 @@ $(document).ready(function() {
 	var latin_square_pointer = 0;
 	var flip_counter = 0;
 
+	setInterval(function(){
+    	movementTime++;
+    }, 10);
+
 
 	$("#form_submit").click(function(){
 		var data = userID+", ";
@@ -395,7 +404,10 @@ $(document).ready(function() {
 		sendData(data);
 		$("#likert_form").hide();
 		$("#text_box").empty();
-		$("#text_box").append("<p>All set. Thanks again!</p>")
+		$("#text_box").append("<p>All set. Don't forget to submit your data!</p>")
+		$("#return_data").show();
+		$("#return_data").append("<a href='mailto:akfoster@mit.edu?subject=testing&body="+encodeURIComponent(test_data)+"'>Please click here to submit test data</a>")
+		$("#return_data").append("<p>If you don't have a desktop mail client, please copy and paste the following into the body of an email addressed to akfoster@mit.edu</p><div>"+test_data+"</div>");
 	});
 
 
@@ -409,6 +421,7 @@ $(document).ready(function() {
 			$("#text_box").empty();
 			$("#text_box").append("<p>Thanks for participating in the test! Please rate your experience in the form below.</p>");
 			$("#likert_form").show();
+			
 
 		};
     	e.preventDefault();
@@ -418,9 +431,7 @@ $(document).ready(function() {
         mousePoint = {"x": mouseX, "y": mouseY};
 
 
-    	setInterval(function(){
-        	movementTime++;
-        }, 100);	
+    		
         
 
         if(cursorType == "Bubble"){
@@ -481,6 +492,7 @@ $(document).ready(function() {
 							if (flip_counter < 1){
 								latin_square_pointer = 0;
 								cursorType = "Point";
+								b_ctx.clearRect(0,0,b.width,b.height);
 								flip_counter++;
 								heat = 0;
 							} else {
