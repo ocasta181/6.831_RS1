@@ -28,6 +28,6 @@ Instructions:
 	2. Open a shell and cd to the folder that contains this file.
 	3. Run the following code:
 		npm install
-		npm server.js
+		node server.js
 
 	4. Open a webrowser and navigate to "http://localhost:1337/"
